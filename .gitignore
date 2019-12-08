@@ -1,0 +1,5 @@
+elpart*
+*.el
+cmd/partition/partition
+cmd/edgelist/edgelist
+cmd/readpart/readpart
