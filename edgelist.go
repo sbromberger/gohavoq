@@ -16,8 +16,8 @@ type EdgeList []Edge
 func (el EdgeList) toVMap() vertexMap {
 	vMap := make(vertexMap)
 	for _, e := range el {
-		s := vHash(e.Src)
-		d := vHash(e.Dst)
+		s := uint64(e.Src)
+		d := uint64(e.Dst)
 		vMap[s] = append(vMap[s], d)
 	}
 	return vMap

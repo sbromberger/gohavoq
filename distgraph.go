@@ -2,13 +2,11 @@ package gohavoq
 
 import "fmt"
 
-type vHash = uint64
-
-func partFunc(v vHash, k int) int {
-	return int(v % vHash(k))
+func partFunc(v uint64, k int) int {
+	return int(v % uint64(k))
 }
 
-type vertexMap map[vHash][]vHash
+type vertexMap map[uint64][]uint64
 
 // GraphNode represents one part of a distributed graph.
 type GraphNode struct {
@@ -21,13 +19,13 @@ func (d *GraphNode) String() string {
 }
 
 // IsLocal returns true if the supplied vertex is local to this node.
-func (d *GraphNode) IsLocal(v vHash) bool {
+func (d *GraphNode) IsLocal(v uint64) bool {
 	_, found := d.vMap[v]
 	return found
 }
 
 // GetNodeFor returns the remote node associated with a given hash by calling partFunc().
-func (d *GraphNode) GetNodeFor(v vHash) int {
+func (d *GraphNode) GetNodeFor(v uint64) int {
 	return partFunc(v, d.nNodes)
 }
 
