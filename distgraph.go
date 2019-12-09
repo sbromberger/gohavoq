@@ -1,10 +1,8 @@
 package gohavoq
 
-import "fmt"
+//GoHavoq implements HAVOQ-GT in Go.
 
-func partFunc(v uint64, k int) int {
-	return int(v % uint64(k))
-}
+import "fmt"
 
 type vertexMap map[uint64][]uint64
 
@@ -24,15 +22,26 @@ func (d *GraphNode) IsLocal(v uint64) bool {
 	return found
 }
 
+func partFunc(v uint64, k int) int {
+	return int(v % uint64(k))
+}
+
 // GetNodeFor returns the remote node associated with a given hash by calling partFunc().
 func (d *GraphNode) GetNodeFor(v uint64) int {
 	return partFunc(v, d.nNodes)
 }
 
-// LoadEdgeList loads an edgelist from an mmapped file.
-// func LoadEdgeList(fn string) EdgeList {
+func makePartFn(fn string, n int) string {
+	return fmt.Sprintf("%s-%d", fn, n)
+}
 
-// func LoadNode(nodeID, nNodes int, fn string) GraphNode {
-// 	el := LoadEdgeList(fn)
-// 	return el.ToNode(nodeID, nNodes)
-// }
+// LoadNode creates a node from a nodeID, total number of nodes, and a file prefix that contains partitions.
+func LoadNode(nodeID, nNodes int, fn string) (GraphNode, error) {
+	partFn := makePartFn(fn, nodeID)
+	el, err := Load(partFn)
+	if err != nil {
+		return GraphNode{}, err
+	}
+
+	return el.ToNode(nodeID, nNodes), nil
+}

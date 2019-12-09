@@ -34,12 +34,8 @@ func PartitionFromEdgeList(inFn string, outFn string, partFn func(uint32, uint32
 	// Set up the partitions.
 	for i := 0; i < nPartitions; i++ {
 		pFn := fmt.Sprintf("%s-%d", outFn, i)
-		pF, err := os.OpenFile(pFn, os.O_RDWR|os.O_CREATE, 0644)
-		if err != nil {
-			return fmt.Errorf("openfile pF %d: %v", i, err)
-		}
 		// Reserve some space for the number of entries, written at the end.
-		partitions[i] = partition{outFn: pFn, outF: pF, offset: 8, entries: 0}
+		partitions[i] = partition{outFn: pFn, offset: 8, entries: 0}
 	}
 
 	scanner := bufio.NewScanner(inF)
@@ -73,11 +69,19 @@ func PartitionFromEdgeList(inFn string, outFn string, partFn func(uint32, uint32
 		uHash, vHash, p := partFn(u, v, nPartitions)
 
 		part := &partitions[p]
+		if part.outF == nil { // we haven't seen this partition yet
+			pF, err := os.OpenFile(part.outFn, os.O_RDWR|os.O_CREATE, 0644)
+			if err != nil {
+				return fmt.Errorf("openfile outFn %s: %v", part.outFn, err)
+			}
+			part.outF = pF
+		}
 		// fmt.Println("u = ", u, "v = ", v, "part = ", part)
 		uBytes := make([]byte, 8)
 		vBytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(uBytes, uHash)
 		binary.LittleEndian.PutUint64(vBytes, vHash)
+
 		// fmt.Println("  writing u:", uHash, " to offset ", part.offset)
 		_, err = part.outF.WriteAt(uBytes, part.offset)
 		if err != nil {
@@ -98,13 +102,7 @@ func PartitionFromEdgeList(inFn string, outFn string, partFn func(uint32, uint32
 	}
 	for i := 0; i < nPartitions; i++ {
 		part := partitions[i]
-		if part.entries == 0 { // if we have no entries for this partition, delete it.
-			part.outF.Close()
-			err = os.Remove(part.outFn)
-			if err != nil {
-				return fmt.Errorf("Remove failed: %v", err)
-			}
-		} else { // write the number of entries in the first 8 bytes
+		if part.entries != 0 { // if we have entries for this partition, write the length at the beginning
 			lenB := make([]byte, 8)
 			// fmt.Printf("writing nEntries = %d for partition %d\n", part.entries, i)
 			binary.LittleEndian.PutUint64(lenB, part.entries)
